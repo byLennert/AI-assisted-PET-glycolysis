@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 虚拟环境
+venv/
+env/
+.env/
+.venv/
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# 嵌入缓存（自动生成，无需提交）
+# 注意：src/data/embeddings/ 内的 .json 文件会自动生成
+# 但我们保留该文件夹和说明文档
+src/data/embeddings/*.json
+src/data/*.npy
+src/data/uname_dict.json
+
+# API Key（绝对不能提交！）
+src/openai_api_key
+openai_api_key
+.env
+*.env
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 测试/构建产物
+*.egg-info/
+dist/
+build/
+htmlcov/
+.coverage
+.pytest_cache/

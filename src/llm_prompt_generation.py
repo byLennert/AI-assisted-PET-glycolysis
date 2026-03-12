@@ -2,104 +2,131 @@ import numpy as np
 import pandas as pd
 import os
 
+def generate_prompt_part1(data_dir='data'):
+    """Describe the reaction and list all tested conditions with yields."""
+    prompt = (
+        "We are studying a metal-mediated reductive hydroalkylation reaction. "
+        "In this reaction, a substituted styrene (0.2 mmol) and an alkyl iodide "
+        "(0.3 mmol) are combined with a metallic reductant and a proton source "
+        "in a solvent at room temperature for 24 hours to produce hydroalkylated "
+        "products (anti-Markovnikov addition across the double bond).\n\n"
+        "The baseline conditions use Mg (5 equiv.) as reductant, AcOH (8 equiv.) "
+        "as proton source, and DMAc (0.2 M) as solvent.\n\n"
+        "Here are all the experimental conditions and their corresponding yields:\n\n"
+    )
 
-BASE = r'C:\Users\darkn\PycharmProjects\AcidLLMRecommendation\data\ustc_data\数据整理'
-
-
-def generate_prompt_part1():
-    prompt = ("Polyethylene terephthalate (PET) is a widely used thermoplastic known for its strength, stability, "
-              "and safety, but its increasing demand has led to significant environmental challenges and reliance on "
-              "non-renewable resources. Efficient recycling of PET, particularly through ethylene glycol (EG) "
-              "glycolysis to produce bis(hydroxyethyl) terephthalate (BHET), offers a sustainable solution. This "
-              "process, operating under mild conditions, has been commercialized, with catalysts playing a key role "
-              "in enhancing reaction efficiency. This study focuses on developing high-performance Lewis acid-base "
-              "catalysts guided by machine learning and establishing an automated platform for plastic degradation.")
-    prompt += ("Here we already have tested several pairs of acids and alkaline bases. All the acids and alkaline "
-               "bases as well as their corresponding catalytic yields are listed below:\n\n")
-    bo = pd.read_excel(os.path.join(BASE, 'bo_data.xlsx'))
-    baseline = pd.read_excel(os.path.join(BASE, 'human_data.xlsx'))
-
-    for i in range(len(bo)):
-        row = bo.iloc[i]
-        prompt += f"Acid: {row['acid']}, alkaline base: {row['base']}, catalytic yield: {row['产率']}\n"
-
-    for i in range(len(baseline)):
-        row = baseline.iloc[i]
-        prompt += f"Acid: {row['acid']}, alkaline base: {row['base']}, catalytic yield: {row['产率']}\n"
+    experiments = pd.read_excel(os.path.join(data_dir, 'init_experiments.xlsx'))
+    for i in range(len(experiments)):
+        row = experiments.iloc[i]
+        red = row.get('Reductant', 'Mg')
+        ps = row.get('ProtonSource', 'AcOH')
+        sol = row.get('Solvent', 'DMAc')
+        yld = row.get('Yield', 'N/A')
+        prompt += f"Reductant: {red}, Proton source: {ps}, Solvent: {sol}, Yield: {yld}%\n"
 
     return prompt
-
 
 def generate_prompt_part2():
-    prompt = "Here are some extra chemical information:\n\n"
-    prompt += "1. The Role of Lewis Acids in Catalyzing Plastic Degradation\n"
-    prompt += "1.1 Effects on Anions\n"
-    prompt += ("The moderate basicity of the counter anion in metal salts yields optimal results. Anions serve two key "
-               "roles: coordination with metal ions and acting as bases. The binding constant between anions and "
-               "metal ions should remain at an intermediate level, balancing two effects:\n")
-    prompt += ("(1) Reducing anion-metal ion binding, which facilitates the coordination of metal ions with ester "
-               "carbonyl groups. This coordination activates the carbonyl group, enhancing the nucleophilic attack by "
-               "the oxygen atom of the alcohol hydroxyl group.\n")
-    prompt += ("(2) Exhibiting strong anionic basicity, which accelerates the deprotonation of the alcohol hydroxyl "
-               "group.\n")
-    prompt += ("The ability of metal ions to bind with counter anions and the basicity of the anions are inherently in "
-               "conflict; therefore, an optimal intermediate value must be determined.\n")
-    prompt += "1.2 Effects of Metal Ions\n"
-    prompt += ("Metal ions coordinate with the oxygen atom of the carbonyl group, facilitating the degradation process "
-               "through two key mechanisms:\n")
-    prompt += "(1) Increasing the solubility of polymers in ethylene glycol, thereby promoting the reaction.\n"
-    prompt += ("(2) Activating the carbonyl group by enhancing the electrophilicity of the carbonyl carbon, making it "
-               "more susceptible to nucleophilic attack by ethylene glycol.\n")
-    prompt += ("Current experimental results indicate that zinc ions demonstrate the most effective activation of "
-               "carbonyl groups.\n")
-    return prompt
+    """Provide chemical background knowledge about the reaction mechanism."""
+    prompt = "\nHere is some relevant chemical background:\n\n"
 
+    prompt += "1. Role of the Metallic Reductant\n"
+    prompt += (
+        "The metal (e.g. Mg, Zn, Mn) serves as a single-electron-transfer (SET) agent. "
+        "It reacts with the alkyl iodide to generate a carbon-centered radical via "
+        "oxidative addition or SET. The reduction potential of the metal is critical: "
+        "Mg (E0 = -2.37 V vs SHE) is a strong reductant capable of activating "
+        "unactivated alkyl iodides. Zn (E0 = -0.76 V) is milder and may show different "
+        "selectivity. The physical form (powder mesh size, turnings) affects surface area "
+        "and therefore reaction rate.\n\n"
+    )
+
+    prompt += "2. Role of the Proton Source\n"
+    prompt += (
+        "The proton source (e.g. AcOH, pKa ~4.76) protonates the organometallic "
+        "intermediate after radical addition to the styrene. The pKa controls the rate "
+        "of protonation: too strong an acid (e.g. TFA, pKa ~0.23) may cause premature "
+        "protonation or side reactions; too weak may leave unreacted intermediates. "
+        "The stoichiometry matters — 8 equiv. of AcOH is used in the baseline, suggesting "
+        "the proton source also plays a role in activating the metal surface.\n\n"
+    )
+
+    prompt += "3. Role of the Solvent\n"
+    prompt += (
+        "DMAc (N,N-dimethylacetamide) is a polar aprotic solvent with high donor number "
+        "(DN = 27.8) that can coordinate to metal surfaces and stabilize radical "
+        "intermediates. It dissolves both organic substrates and helps solvate the metal "
+        "surface. However, DMAc is a reproductive toxicant (SVHC). Greener alternatives "
+        "such as 2-MeTHF, ethanol, or water/surfactant systems may be desirable but "
+        "could affect radical stability, metal activation, and substrate solubility.\n\n"
+    )
+
+    prompt += "4. Substrate Compatibility Considerations\n"
+    prompt += (
+        "The reaction should tolerate: (a) electron-withdrawing groups (-CF3, -F, -Cl, -Br) "
+        "without cleaving aryl-halogen bonds, (b) electron-donating groups (-OMe, -tBu), "
+        "(c) heterocycles (furan, thiophene), (d) ester and ether linkages. "
+        "Conditions that are too reductive may cause aryl C-Cl or C-Br bond cleavage.\n"
+    )
+
+    return prompt
 
 def generate_prompt_part3():
-    prompt = ("Now we need to consider the synergistic effects of Lewis acid-base pairs in the catalytic degradation "
-              "of plastics. Assuming that the degradation yield of the Lewis acid alone is x, and the yield of the "
-              "base alone is y, if the combined yield significantly exceeds the larger one in x and y, the pair is "
-              "considered to exhibit positive synergy. Conversely, if the combined yield is significantly less than "
-              "the smaller one of x and y, they are considered to exhibit negative synergy. \n")
-    prompt += ("Our goal is to identify the shared characteristics of acids or bases that exhibit positive synergy. "
-               "For example, if acid A and base B demonstrate positive synergistic effects, we aim to determine the "
-               "common characteristics that acid C might share with acid A to predict that it could also exhibit "
-               "positive synergy with base B. By leveraging such characteristics, we can systematically recommend "
-               "Lewis acid-base pairs with positive synergistic effects. \n")
-    prompt += ("\n\n Please analyze the data and generate 5 hypotheses about the preferences and data trend based on "
-               "the above Lewis acid and base theory for further research. Please also provide your logic as well as "
-               "the data points that suppport your hypotheses. \n\n")
+    """Ask the LLM to generate hypotheses and suggestions."""
+    prompt = (
+        "\n\nBased on the above data and chemical knowledge, please:\n"
+        "1. Generate 5 hypotheses about which combinations of reductant, proton source, "
+        "and solvent might lead to higher yields or broader substrate scope.\n"
+        "2. For each hypothesis, explain your reasoning and cite supporting data points.\n"
+        "3. Identify potential trade-offs between yield and green chemistry metrics "
+        "(lower toxicity solvent, less excess reagent).\n\n"
+    )
     return prompt
 
+def generate_prompt(data_dir='data'):
+    return (generate_prompt_part1(data_dir)
+            + generate_prompt_part2()
+            + generate_prompt_part3())
 
-def generate_prompt():
-    prompt = generate_prompt_part1() + generate_prompt_part2() + generate_prompt_part3()
-    return prompt
+def generate_suggestion_prompt(data_dir='data'):
+    avail_reductant = pd.read_excel(
+        os.path.join(data_dir, 'reductant.xlsx'))['name'].tolist()
+    avail_proton_source = pd.read_excel(
+        os.path.join(data_dir, 'proton_source.xlsx'))['name'].tolist()
+    avail_solvent = pd.read_excel(
+        os.path.join(data_dir, 'solvent.xlsx'))['name'].tolist()
 
+    prompt = (
+        "For each hypothesis above, please recommend 3 new combinations of "
+        "(reductant, proton source, solvent) that have NOT been tested yet "
+        "and that you expect to give higher catalytic yields.\n\n"
+        "You MUST only choose from the following available chemicals:\n\n"
+    )
 
-def generate_suggestion_prompt():
-    avail_acid_info = pd.read_excel('data/ustc_data/acid.xlsx')['name'].tolist()
-    avail_base_info = pd.read_excel('data/ustc_data/base.xlsx')['name'].tolist()
+    prompt += "Available reductants:\n"
+    for i, name in enumerate(avail_reductant):
+        prompt += f"  {i+1}. {name}\n"
 
-    prompt = ("For each one of the above hypotheses, please recommend 3 pairs of acid and base for higher catalytic "
-              "yield. Please do not recommend any acid-base pair that is already tested and given above.\n")
-    prompt += ("All available acids and alkaline bases are listed below. Please only recommend the acids and alkaline "
-               "bases that are avaiable in the database.\n")
+    prompt += "\nAvailable proton sources:\n"
+    for i, name in enumerate(avail_proton_source):
+        prompt += f"  {i+1}. {name}\n"
 
-    prompt += "The available acids are:\n"
-    for i in range(len(avail_acid_info)):
-        prompt += f"{i + 1}. {avail_acid_info[i]}\n"
-    prompt += "\n\nThe available alkaline bases are: \n\n"
-    for i in range(len(avail_base_info)):
-        prompt += f"{i + 1}. {avail_base_info[i]}\n"
+    prompt += "\nAvailable solvents:\n"
+    for i, name in enumerate(avail_solvent):
+        prompt += f"  {i+1}. {name}\n"
 
-    prompt += ("\nPlease give out each of the above hypotheses first, then the 3 suggestions corresponding to the "
-               "hypothesis.")
+    prompt += (
+        "\nFor each hypothesis, give the 3 suggestions in this format:\n"
+        "Hypothesis N: <brief statement>\n"
+        "  1. Reductant: ..., Proton source: ..., Solvent: ...\n"
+        "  2. ...\n"
+        "  3. ...\n"
+    )
     return prompt
 
 
 if __name__ == '__main__':
     prompt = generate_prompt()
     print(prompt)
-
-    
+    print("\n" + "=" * 60 + "\n")
+    print(generate_suggestion_prompt())
